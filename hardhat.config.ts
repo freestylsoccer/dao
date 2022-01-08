@@ -22,7 +22,8 @@ require('dotenv').config();
 
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-waffle';
-import 'temp-hardhat-etherscan';
+// import 'temp-hardhat-etherscan';
+import '@nomiclabs/hardhat-etherscan';
 import 'hardhat-gas-reporter';
 import 'hardhat-typechain';
 import '@tenderly/hardhat-tenderly';
@@ -40,7 +41,7 @@ const UNLIMITED_BYTECODE_SIZE = process.env.UNLIMITED_BYTECODE_SIZE === 'true';
 
 // Prevent to load scripts before compilation and typechain
 if (!SKIP_LOAD) {
-  ['misc', 'migrations', 'dev', 'full', 'verifications', 'deployments', 'helpers'].forEach(
+  ['misc', 'migrations', 'dev', 'dao', 'full', 'verifications', 'deployments', 'helpers'].forEach(
     (folder) => {
       const tasksPath = path.join(__dirname, 'tasks', folder);
       fs.readdirSync(tasksPath)
@@ -73,11 +74,31 @@ let forkMode;
 
 const buidlerConfig: HardhatUserConfig = {
   solidity: {
-    version: '0.6.12',
-    settings: {
-      optimizer: { enabled: true, runs: 200 },
-      evmVersion: 'istanbul',
-    },
+    // version: '0.6.12',
+    compilers: [
+      {
+        version: "0.7.5",
+        settings: {
+          metadata: {
+            bytecodeHash: "none",
+          },
+          optimizer: {
+            enabled: true,
+            runs: 800,
+          },
+        },
+      },
+      {
+        version: "0.6.12",
+        settings: {
+          optimizer: { enabled: true, runs: 200 },
+          evmVersion: 'istanbul',
+        },
+      },
+      {
+        version: "0.5.16",
+      },
+    ],
   },
   typechain: {
     outDir: 'types',

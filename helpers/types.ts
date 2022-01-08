@@ -102,6 +102,15 @@ export enum eContractid {
   ParaSwapLiquiditySwapAdapter = 'ParaSwapLiquiditySwapAdapter',
   UiIncentiveDataProviderV2V3 = 'UiIncentiveDataProviderV2V3',
   UiIncentiveDataProviderV2 = 'UiIncentiveDataProviderV2',
+  OlympusAuthority = 'OlympusAuthority',
+  OlympusTokenMigrator = 'OlympusTokenMigrator',
+  GOHM = "GOHM",
+  SOlympus = "SOlympus",
+  OlympusERC20Token = "OlympusERC20Token",
+  OlympusTreasury = "OlympusTreasury",
+  OlympusBondingCalculator = "OlympusBondingCalculator",
+  OlympusStaking = "OlympusStaking",
+  Distributor = "Distributor",
 }
 
 /*

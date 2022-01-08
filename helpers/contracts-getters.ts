@@ -33,6 +33,13 @@ import {
   WETH9MockedFactory,
   WETHGatewayFactory,
   FlashLiquidationAdapterFactory,
+  OlympusAuthorityFactory,
+  SOlympusFactory,
+  OlympusERC20TokenFactory,
+  GOHMFactory,
+  OlympusTreasuryFactory,
+  OlympusStakingFactory,
+  DistributorFactory,
 } from '../types';
 import { IERC20DetailedFactory } from '../types/IERC20DetailedFactory';
 import { getEthersSigners, MockTokenMap } from './contracts-helpers';
@@ -66,6 +73,68 @@ export const getLendingPool = async (address?: tEthereumAddress) =>
       (
         await getDb().get(`${eContractid.LendingPool}.${DRE.network.name}`).value()
       ).address,
+    await getFirstSigner()
+  );
+
+export const getOlympusAuthority = async (address?: tEthereumAddress) =>
+  await OlympusAuthorityFactory.connect(
+    address ||
+    (
+      await getDb().get(`${eContractid.OlympusAuthority}.${DRE.network.name}`).value()
+    ).address,
+    await getFirstSigner()
+  );
+
+export const getSohm = async (address?: tEthereumAddress) =>
+  await SOlympusFactory.connect(
+    address ||
+    (
+      await getDb().get(`${eContractid.SOlympus}.${DRE.network.name}`).value()
+    ).address,
+    await getFirstSigner()
+  );
+
+export const getGohm = async (address?: tEthereumAddress) =>
+  await GOHMFactory.connect(
+    address ||
+    (
+      await getDb().get(`${eContractid.GOHM}.${DRE.network.name}`).value()
+    ).address,
+    await getFirstSigner()
+  );
+export const getOhm = async (address?: tEthereumAddress) =>
+  await OlympusERC20TokenFactory.connect(
+    address ||
+    (
+      await getDb().get(`${eContractid.OlympusERC20Token}.${DRE.network.name}`).value()
+    ).address,
+    await getFirstSigner()
+  );
+
+export const getOlympusTreasury = async (address?: tEthereumAddress) =>
+  await OlympusTreasuryFactory.connect(
+    address ||
+    (
+      await getDb().get(`${eContractid.OlympusTreasury}.${DRE.network.name}`).value()
+    ).address,
+    await getFirstSigner()
+  );
+
+export const getOlympusStaking = async (address?: tEthereumAddress) =>
+  await OlympusStakingFactory.connect(
+    address ||
+    (
+      await getDb().get(`${eContractid.OlympusStaking}.${DRE.network.name}`).value()
+    ).address,
+    await getFirstSigner()
+  );
+
+  export const getOlympusStakingDistributor = async (address?: tEthereumAddress) =>
+  await DistributorFactory.connect(
+    address ||
+    (
+      await getDb().get(`${eContractid.Distributor}.${DRE.network.name}`).value()
+    ).address,
     await getFirstSigner()
   );
 

@@ -55,6 +55,16 @@ import {
   UiPoolDataProviderV2V3Factory,
   UiIncentiveDataProviderV2V3,
   UiIncentiveDataProviderV2Factory,
+  OlympusAuthorityFactory,
+  OlympusTokenMigratorFactory,
+  GOHMFactory,
+  SOlympusFactory,
+  OlympusERC20TokenFactory,
+  OlympusTreasury,
+  OlympusTreasuryFactory,
+  OlympusBondingCalculatorFactory,
+  OlympusStakingFactory,
+  DistributorFactory,
 } from '../types';
 import {
   withSaveAndVerify,
@@ -352,6 +362,95 @@ export const deployMintableERC20 = async (
     args,
     verify
   );
+
+export const deployAuthority = async (
+  args: [string, string, string, string],
+  verify?: boolean) =>
+    withSaveAndVerify(
+      await new OlympusAuthorityFactory(await getFirstSigner()).deploy(...args),
+      eContractid.OlympusAuthority,
+      args,
+      verify
+    );
+
+export const deployMigrator = async (
+  args: [string, string, string, string, string, string, string, string, string],
+  verify?: boolean) =>
+    withSaveAndVerify(
+      await new OlympusTokenMigratorFactory(await getFirstSigner()).deploy(...args),
+      eContractid.OlympusTokenMigrator,
+      args,
+      verify
+    );
+
+export const deployGohm = async (
+  args: [string, string],
+  verify?: boolean ) =>
+  withSaveAndVerify(
+    await new GOHMFactory(await getFirstSigner()).deploy(...args),
+      eContractid.GOHM,
+      args,
+      verify
+    );
+
+export const deploySohm = async (
+  verify?: boolean ) =>
+  withSaveAndVerify(
+    await new SOlympusFactory(await getFirstSigner()).deploy(),
+      eContractid.SOlympus,
+      [],
+      verify
+    );
+
+export const deployOhm = async (
+  args: [string],
+  verify?: boolean ) =>
+  withSaveAndVerify(
+    await new OlympusERC20TokenFactory(await getFirstSigner()).deploy(...args),
+      eContractid.OlympusERC20Token,
+      args,
+      verify
+    );
+
+export const deployTreasury = async (
+  args: [string, string, string],
+  verify?: boolean ) =>
+  withSaveAndVerify(
+    await new OlympusTreasuryFactory(await getFirstSigner()).deploy(...args),
+      eContractid.OlympusTreasury,
+      args,
+      verify
+    );
+
+export const deployBoundingCalculator = async (
+  args: [string],
+  verify?: boolean ) =>
+  withSaveAndVerify(
+    await new OlympusBondingCalculatorFactory(await getFirstSigner()).deploy(...args),
+      eContractid.OlympusBondingCalculator,
+      args,
+      verify
+    );
+
+export const deployStaking = async (
+  args: [string, string, string, string, string, string, string],
+  verify?: boolean ) =>
+  withSaveAndVerify(
+    await new OlympusStakingFactory(await getFirstSigner()).deploy(...args),
+      eContractid.OlympusStaking,
+      args,
+      verify
+    );
+
+export const deployStakingDistributor = async (
+  args: [string, string, string, string],
+  verify?: boolean ) =>
+  withSaveAndVerify(
+    await new DistributorFactory(await getFirstSigner()).deploy(...args),
+      eContractid.Distributor,
+      args,
+      verify
+    );
 
 export const deployMintableDelegationERC20 = async (
   args: [string, string, string],
