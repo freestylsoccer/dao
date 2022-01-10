@@ -41,7 +41,7 @@ export const verifyEtherscanContract = async (
       '[ETHERSCAN][WARNING] Delaying Etherscan verification due their API can not find newly deployed contracts'
     );
     const msDelay = 3000;
-    const times = 4;
+    const times = 1;
     // Write a temporal file to host complex parameters for buidler-etherscan https://github.com/nomiclabs/buidler/tree/development/packages/buidler-etherscan#complex-arguments
     const { fd, path, cleanup } = await file({
       prefix: 'verify-params-',

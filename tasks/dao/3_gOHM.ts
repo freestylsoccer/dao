@@ -11,7 +11,7 @@ task('dao:gohm', 'Deploy gOHM for dev enviroment')
   .setAction(async ({ verify }, localBRE) => {
     await localBRE.run('set-DRE');
     console.log('deploying gOHM...');
-    const migrator = ZERO_ADDRESS;
+    const migrator = "0x2e55589e69Adf04f89eA0E86EFB8734FC29d6e46";
     const sOHM = await getSohm();
 
     await deployGohm([migrator, sOHM.address], verify);

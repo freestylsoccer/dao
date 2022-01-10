@@ -27,6 +27,12 @@ task('dao:initialize', 'Initialize contracts.')
     const sOhm = await getSohm();
     const gOhm = await getGohm();
 
+    // Step 0: Set mint rights from migrator to staking
+    await waitForTx(
+      await gOhm.migrate(olympusStaking.address, sOhm.address)
+    );
+    console.log("Setup -- gOhm.migrate: set mint rights to staking");
+
     // Step 1: Set treasury as vault on authority
     await waitForTx(
       await olympusAuthority.pushVault(olympusTreasury.address, true)

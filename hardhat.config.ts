@@ -89,6 +89,18 @@ const buidlerConfig: HardhatUserConfig = {
         },
       },
       {
+        version: "0.8.10",
+        settings: {
+          metadata: {
+            bytecodeHash: "none",
+          },
+          optimizer: {
+            enabled: true,
+            runs: 800,
+          },
+        },
+      },
+      {
         version: "0.6.12",
         settings: {
           optimizer: { enabled: true, runs: 200 },

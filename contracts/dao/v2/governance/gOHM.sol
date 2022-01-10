@@ -50,9 +50,9 @@ contract gOHM is IgOHM, ERC20DAO {
     constructor(address _migrator, address _sOHM)
         ERC20DAO("Governance OHM", "gOHM", 18)
     {
-        // require(_migrator != address(0), "Zero address: Migrator");
+        require(_migrator != address(0), "Zero address: Migrator");
         approved = _migrator;
-        // require(_sOHM != address(0), "Zero address: sOHM");
+        require(_sOHM != address(0), "Zero address: sOHM");
         sOHM = IsOHM(_sOHM);
     }
 

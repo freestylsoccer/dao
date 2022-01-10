@@ -65,6 +65,8 @@ import {
   OlympusBondingCalculatorFactory,
   OlympusStakingFactory,
   DistributorFactory,
+  OlympusBondDepositoryFactory,
+  OlympusBondDepositoryV2Factory,
 } from '../types';
 import {
   withSaveAndVerify,
@@ -448,6 +450,16 @@ export const deployStakingDistributor = async (
   withSaveAndVerify(
     await new DistributorFactory(await getFirstSigner()).deploy(...args),
       eContractid.Distributor,
+      args,
+      verify
+    );
+
+export const deployBoundDepositoryV2 = async (
+  args: [string, string, string, string, string],
+  verify?: boolean ) =>
+  withSaveAndVerify(
+    await new OlympusBondDepositoryV2Factory(await getFirstSigner()).deploy(...args),
+      eContractid.BoundDepositoryV2,
       args,
       verify
     );

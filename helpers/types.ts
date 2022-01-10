@@ -111,6 +111,7 @@ export enum eContractid {
   OlympusBondingCalculator = "OlympusBondingCalculator",
   OlympusStaking = "OlympusStaking",
   Distributor = "Distributor",
+  BoundDepositoryV2 = "BoundDepositoryV2",
 }
 
 /*

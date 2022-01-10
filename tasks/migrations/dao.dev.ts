@@ -15,7 +15,7 @@ task('dao:dev', 'Deploy DAO development enviroment')
     }
 
     console.log('Migration started\n');
-
+/*
     console.log('1. Deploy Olympus Authority');
     await localBRE.run('dao:deploy-authority', { verify });
 
@@ -42,6 +42,9 @@ task('dao:dev', 'Deploy DAO development enviroment')
 
     console.log('9. Initialize Contracts');
     await localBRE.run('dao:initialize', { verify });
+*/
+    console.log('10. Deploy Bound Depository');
+    await localBRE.run('dao:bounddepository', { verify: true });
 
     printContracts();
   });

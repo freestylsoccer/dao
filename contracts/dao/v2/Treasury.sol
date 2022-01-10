@@ -91,12 +91,14 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
         address _ohm,
         uint256 _timelock,
         address _authority
+        // address _sOhm
     ) OlympusAccessControlled(IOlympusAuthority(_authority)) {
         require(_ohm != address(0), "Zero address: OHM");
         OHM = IOHM(_ohm);
+        // sOHM = IsOHM(_sOhm);
 
         timelockEnabled = false;
-        initialized = false;
+        initialized = true;
         blocksNeededForQueue = _timelock;
     }
 

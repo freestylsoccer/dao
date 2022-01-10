@@ -40,6 +40,9 @@ import {
   OlympusTreasuryFactory,
   OlympusStakingFactory,
   DistributorFactory,
+  OlympusBondingCalculator,
+  OlympusBondingCalculatorFactory,
+  OlympusBondDepositoryV2Factory,
 } from '../types';
 import { IERC20DetailedFactory } from '../types/IERC20DetailedFactory';
 import { getEthersSigners, MockTokenMap } from './contracts-helpers';
@@ -129,11 +132,29 @@ export const getOlympusStaking = async (address?: tEthereumAddress) =>
     await getFirstSigner()
   );
 
-  export const getOlympusStakingDistributor = async (address?: tEthereumAddress) =>
+export const getOlympusStakingDistributor = async (address?: tEthereumAddress) =>
   await DistributorFactory.connect(
     address ||
     (
       await getDb().get(`${eContractid.Distributor}.${DRE.network.name}`).value()
+    ).address,
+    await getFirstSigner()
+  );
+
+export const getOlympusBondingCalculator = async (address?: tEthereumAddress) =>
+  await OlympusBondingCalculatorFactory.connect(
+    address ||
+    (
+      await getDb().get(`${eContractid.OlympusBondingCalculator}.${DRE.network.name}`).value()
+    ).address,
+    await getFirstSigner()
+  );
+
+export const getOlympusBondDepositoryV2 = async (address?: tEthereumAddress) =>
+  await OlympusBondDepositoryV2Factory.connect(
+    address ||
+    (
+      await getDb().get(`${eContractid.BoundDepositoryV2}.${DRE.network.name}`).value()
     ).address,
     await getFirstSigner()
   );
