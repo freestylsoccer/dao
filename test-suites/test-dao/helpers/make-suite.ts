@@ -10,6 +10,7 @@ import {
   getOlympusStakingDistributor,
   getOlympusBondingCalculator,
   getOlympusBondDepositoryV2,
+  getMockDai,
 } from '../../../helpers/contracts-getters';
 import { eEthereumNetwork, eNetwork, tEthereumAddress } from '../../../helpers/types';
 import { OlympusStaking } from '../../../types/OlympusStaking';
@@ -20,7 +21,7 @@ import bignumberChai from 'chai-bignumber';
 import { almostEqual } from './almost-equal';
 import { getEthersSigners } from '../../../helpers/contracts-helpers';
 import { solidity } from 'ethereum-waffle';
-import { Distributor, GOHM, SOlympus, OlympusAuthority, OlympusBondDepositoryV2, OlympusBondingCalculator, OlympusERC20Token, OlympusTreasury } from '../../../types';
+import { Distributor, GOHM, SOlympus, OlympusAuthority, OlympusBondDepositoryV2, OlympusBondingCalculator, OlympusERC20Token, OlympusTreasury, DAI } from '../../../types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { usingTenderly } from '../../../helpers/tenderly-utils';
 
@@ -42,6 +43,7 @@ export interface TestEnv {
   stakingDistributor: Distributor;
   boundingCalculator: OlympusBondingCalculator;
   boundDepository: OlympusBondDepositoryV2;
+  mockDai: DAI;
 
   deployer: SignerWithAddress;
   users: SignerWithAddress[];
@@ -62,6 +64,7 @@ const testEnv: TestEnv = {
   stakingDistributor: {} as Distributor,
   boundingCalculator: {} as OlympusBondingCalculator,
   boundDepository: {} as OlympusBondDepositoryV2,
+  mockDai: {} as DAI,
 
   deployer: {} as SignerWithAddress,
   users: [] as SignerWithAddress[],
@@ -91,6 +94,8 @@ export async function initializeMakeSuite() {
   testEnv.stakingDistributor = await getOlympusStakingDistributor();
   testEnv.boundingCalculator = await getOlympusBondingCalculator();
   testEnv.boundDepository = await getOlympusBondDepositoryV2();
+
+  testEnv.mockDai = await getMockDai();
 }
 
 const setSnapshot = async () => {

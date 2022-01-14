@@ -43,6 +43,7 @@ import {
   OlympusBondingCalculator,
   OlympusBondingCalculatorFactory,
   OlympusBondDepositoryV2Factory,
+  DAIFactory,
 } from '../types';
 import { IERC20DetailedFactory } from '../types/IERC20DetailedFactory';
 import { getEthersSigners, MockTokenMap } from './contracts-helpers';
@@ -159,6 +160,14 @@ export const getOlympusBondDepositoryV2 = async (address?: tEthereumAddress) =>
     await getFirstSigner()
   );
 
+export const getMockDai = async (address?: tEthereumAddress) =>
+  await DAIFactory.connect(
+    address ||
+    (
+      await getDb().get(`${eContractid.DAI}.${DRE.network.name}`).value()
+    ).address,
+    await getFirstSigner()
+  );
 export const getPriceOracle = async (address?: tEthereumAddress) =>
   await PriceOracleFactory.connect(
     address ||

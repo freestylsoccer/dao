@@ -98,7 +98,7 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
         // sOHM = IsOHM(_sOhm);
 
         timelockEnabled = false;
-        initialized = true;
+        initialized = false;
         blocksNeededForQueue = _timelock;
     }
 

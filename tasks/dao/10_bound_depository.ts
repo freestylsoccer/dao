@@ -35,20 +35,5 @@ task('dao:bounddepository', 'Deploy Bound Depository for dev enviroment')
 
       ],
       verify);
-
-
-    const quoteToken = "0x2Dd2b797D8fBd892d8CE6c9260F8488ccd6C9A6c";
-    const capacity = 8260000000000;
-    const initialPrice = 256000000000;
-    const debtBuffer = 100000;
-    // Create market
-    await waitForTx(await boundDepositoryV2.create(
-      quoteToken,
-      [capacity, initialPrice, debtBuffer],
-      [false, true],
-      [1209600, 1642284000],
-      [21600, 86400]
-      )
-    );
   });
 
