@@ -68,7 +68,6 @@ import {
   OlympusBondDepositoryFactory,
   OlympusBondDepositoryV2Factory,
   DAIFactory,
-  NoteKeeperFactory,
 } from '../types';
 import {
   withSaveAndVerify,
@@ -474,16 +473,6 @@ export const deployMockDai = async (
       args,
       verify
     );
-
-  export const deployNoteKeeper = async (
-    args: [string, string, string, string, string],
-    verify?: boolean ) =>
-    withSaveAndVerify(
-      await new NoteKeeperFactory(await getFirstSigner()).deploy(...args),
-        eContractid.NoteKeeper,
-        args,
-        verify
-      );
 
 export const deployMintableDelegationERC20 = async (
   args: [string, string, string],

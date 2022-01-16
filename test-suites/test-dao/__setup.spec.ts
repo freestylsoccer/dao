@@ -13,7 +13,6 @@ import {
   deployStakingDistributor,
   deployBoundDepositoryV2,
   deployMockDai,
-  deployNoteKeeper,
 } from '../../helpers/contracts-deployments';
 import { Signer } from 'ethers';
 import { initializeMakeSuite } from './helpers/make-suite';
@@ -46,7 +45,7 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
   const boundingCalculator = await deployBoundingCalculator([OHM.address], false);
 
   // deploy olympus staking
-  const EPOCH_LENGTH_IN_BLOCKS = "1000";
+  const EPOCH_LENGTH_IN_BLOCKS = "2200";
   const FIRST_EPOCH_NUMBER = "767";
   const FIRST_EPOCH_TIME = "1639430907";
   const olympusStaking = await deployStaking(
@@ -80,19 +79,10 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
 
     ],
     false);
-  /*
-  const noteKeeper = await deployNoteKeeper(
-    [
-      olympusAuthority.address,
-      OHM.address,
-      gOhm.address,
-      olympusStaking.address,
-      olympusTreasury.address
-    ], false);
-  */
+
   const mockDai = await deployMockDai(["0"], false)
   // initial configuration
-  const INITIAL_INDEX = "45000000000";
+  const INITIAL_INDEX = "7675210820";
   const INITIAL_REWARD_RATE = "4000";
   const BOUNTY_AMOUNT = "100000000";
 
@@ -111,6 +101,10 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
 
   // Step 2: Set distributor as minter on treasury
   // Allows distributor to mint ohm.
+  // await waitForTx(
+  //   await olympusTreasury.queueTimelock(2, mockDai.address, mockDai.address)
+  // );
+
   await waitForTx(
     await olympusTreasury.enable(8, olympusStakingDistributor.address, olympusStakingDistributor.address)
   );
@@ -123,6 +117,23 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
   await waitForTx(
     await olympusTreasury.enable(0, master, master)
   );
+  /*
+  await waitForTx(
+    await olympusTreasury.execute("0")
+  );
+  await waitForTx(
+    await olympusTreasury.execute("1")
+  );
+  await waitForTx(
+    await olympusTreasury.execute("2")
+  );
+  await waitForTx(
+    await olympusTreasury.execute("3")
+  );
+  await waitForTx(
+    await olympusTreasury.execute("4")
+  );
+  */
   // await waitForTx(
   //   await olympusTreasury.enable(1, boundDepository.address, ZERO_ADDRESS)
   // );
@@ -138,7 +149,7 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
   if ((await sOhm.gOHM()) == ZERO_ADDRESS) {
     await waitForTx(
       await sOhm.setIndex(INITIAL_INDEX)
-    ); // TODO
+    );
     await waitForTx(
       await sOhm.setgOHM(gOhm.address)
     );

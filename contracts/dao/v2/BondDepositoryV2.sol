@@ -443,9 +443,6 @@ contract OlympusBondDepositoryV2 is IBondDepositoryV2, NoteKeeper {
    * @return             debt ratio for market in quote decimals
    */
   function debtRatio(uint256 _id) public view override returns (uint256) {
-    if (treasury.baseSupply() == uint256(0)) {
-      return uint256(0);
-    }
     return
       currentDebt(_id)
       * (10 ** metadata[_id].quoteDecimals)
@@ -561,9 +558,6 @@ contract OlympusBondDepositoryV2 is IBondDepositoryV2, NoteKeeper {
    * @return                  current debt for market in quote decimals
    */
   function _debtRatio(uint256 _id) internal view returns (uint256) {
-    if (treasury.baseSupply() == uint256(0)) {
-      return uint256(0);
-    }
     return
       markets[_id].totalDebt
       * (10 ** metadata[_id].quoteDecimals)

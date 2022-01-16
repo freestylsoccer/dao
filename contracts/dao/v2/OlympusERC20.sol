@@ -16,9 +16,7 @@ contract OlympusERC20Token is ERC20Permit, IOHM, OlympusAccessControlled {
     constructor(address _authority)
     ERC20DAO("Olympus", "OHM", 9)
     ERC20Permit("Olympus")
-    OlympusAccessControlled(IOlympusAuthority(_authority)) {
-      _totalSupply = 1000000000;
-    }
+    OlympusAccessControlled(IOlympusAuthority(_authority)) {}
 
     function mint(address account_, uint256 amount_) external override onlyVault {
         _mint(account_, amount_);
