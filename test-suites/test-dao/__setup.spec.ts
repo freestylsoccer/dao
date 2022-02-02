@@ -45,7 +45,7 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
   const boundingCalculator = await deployBoundingCalculator([OHM.address], false);
 
   // deploy olympus staking
-  const EPOCH_LENGTH_IN_BLOCKS = "2200";
+  const EPOCH_LENGTH_IN_BLOCKS = "100000";
   const FIRST_EPOCH_NUMBER = "767";
   const FIRST_EPOCH_TIME = "1639430907";
   const olympusStaking = await deployStaking(
@@ -82,7 +82,7 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
 
   const mockDai = await deployMockDai(["0"], false)
   // initial configuration
-  const INITIAL_INDEX = "7675210820";
+  const INITIAL_INDEX = "1000000000";
   const INITIAL_REWARD_RATE = "4000";
   const BOUNTY_AMOUNT = "100000000";
 
@@ -104,19 +104,36 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
   // await waitForTx(
   //   await olympusTreasury.queueTimelock(2, mockDai.address, mockDai.address)
   // );
+  
+  // toggle reward manager
+  await waitForTx(
+    await olympusTreasury.enable(8, olympusStakingDistributor.address, ZERO_ADDRESS)
+  );
 
   await waitForTx(
-    await olympusTreasury.enable(8, olympusStakingDistributor.address, olympusStakingDistributor.address)
+    await olympusTreasury.enable(8, boundDepository.address, ZERO_ADDRESS)
   );
+  
+  // toggle DAI as reserve token
   await waitForTx(
-    await olympusTreasury.enable(8, boundDepository.address, boundDepository.address)
+    await olympusTreasury.enable(2, mockDai.address, ZERO_ADDRESS)
   );
+  
+  // toggle deployer reserve depositor
   await waitForTx(
-    await olympusTreasury.enable(2, mockDai.address, mockDai.address)
+    await olympusTreasury.enable(0, master, ZERO_ADDRESS)
   );
+  
+  // set sOHM
   await waitForTx(
-    await olympusTreasury.enable(0, master, master)
+    await olympusTreasury.enable(9, sOhm.address, ZERO_ADDRESS)
   );
+  
+  // toggle liquidity depositor
+  await waitForTx(
+    await olympusTreasury.enable(4, master, ZERO_ADDRESS)
+  );
+  
   /*
   await waitForTx(
     await olympusTreasury.execute("0")
@@ -147,6 +164,7 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
 
   // Step 4: Initialize sOHM and set the index
   if ((await sOhm.gOHM()) == ZERO_ADDRESS) {
+    // Set index to 1
     await waitForTx(
       await sOhm.setIndex(INITIAL_INDEX)
     );

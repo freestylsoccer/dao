@@ -1,0 +1,256 @@
+import { BigNumber } from 'ethers';
+import { network} from 'hardhat'
+import { TestEnv, makeSuite } from './helpers/make-suite';
+
+const { expect } = require('chai');
+
+makeSuite('Treasuty', (testEnv: TestEnv) => {
+  const LARGE_APPROVAL = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+  const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+  // 1000 * 10 ** 18
+  const initialMint = "0x3635C9ADC5DEA00000";
+  // Reward rate of .1%
+  const initialRewardRate = "1000";
+  // Debt limit of 10 | 10 * 10 ** 9
+  const debtLimit = "0x2540BE400";
+  // profit 900000000000 = 900e9
+  const profit = "0xD18C2E2800";
+
+
+  const mineBlock = async () => {
+    await network.provider.request({
+        method: "evm_mine",
+        params: [],
+    });
+  };
+
+  // Calculate index after some number of epochs. Takes principal and rebase rate.
+  // TODO verify this works
+  const calcIndex = (principal, rate, epochs) => principal * (1 + rate) ** epochs;
+
+  // TODO needs cleanup. use Bignumber.
+  // Mine block and rebase. Returns the new index.
+  /*
+  const triggerRebase = async () => {
+      mineBlock();
+      await staking.rebase();
+
+      return await sOhm.index();
+  };
+  */
+
+  it('setup treasury', async () => {
+    const { mockDai, OHM, sOHM, staking, stakingDistributor, treasury, deployer } = testEnv;
+
+    // Needed for treasury deposit
+    //await gOhm.migrate(staking.address, sOhm.address);
+    await mockDai.mint(deployer.address, initialMint);
+    await mockDai.approve(treasury.address, LARGE_APPROVAL);
+
+    // Needed to spend deployer's OHM
+    await OHM.approve(staking.address, LARGE_APPROVAL);
+
+    // Don't need to disable timelock because disabled by default.
+
+    // toggle reward manager
+    await treasury.enable("8", stakingDistributor.address, ZERO_ADDRESS);
+    // toggle deployer reserve depositor
+    await treasury.enable("0", deployer.address, ZERO_ADDRESS);
+    // toggle liquidity depositor
+    await treasury.enable("4", deployer.address, ZERO_ADDRESS);
+    // toggle DAI as reserve token
+    await treasury.enable("2", mockDai.address, ZERO_ADDRESS);
+    // set sOHM
+    await treasury.enable("9", sOHM.address, ZERO_ADDRESS);
+
+    // Add staking as recipient of distributor with a test reward rate
+    await stakingDistributor.addRecipient(staking.address, initialRewardRate);
+
+  });
+
+  it('deposit to treasury', async () => {
+    const { mockDai, staking, OHM, sOHM, treasury, deployer, users } = testEnv;
+    console.log("pre deposit");
+    console.log(await treasury.tokenValue(mockDai.address, profit));
+    console.log(await treasury.baseSupply());
+    console.log(await treasury.excessReserves());
+    console.log(await treasury.indexInRegistry(deployer.address, 1));
+
+    // deposit to treasury
+    await treasury.connect(deployer.signer).deposit(initialMint, mockDai.address, profit);
+    console.log("post deposit");
+    console.log(await treasury.tokenValue(mockDai.address, profit));
+    console.log(await treasury.baseSupply());
+    console.log(await treasury.excessReserves());
+    console.log(await treasury.indexInRegistry(deployer.address, 1));
+
+    // Get sOHM in deployer wallet
+    // 100 OHM
+    const sohmAmount = "0x174876E800";
+    await OHM.approve(staking.address, LARGE_APPROVAL);
+
+    await staking.stake(deployer.address, sohmAmount, true, true);
+
+    // Transfer 10 sOHM to user[0] for testing
+    await sOHM.transfer(users[0].address, debtLimit);
+    // Transfer 10 sOHM to user[1] for testing
+    await sOHM.transfer(users[1].address, debtLimit);
+    // Transfer 10 sOHM to user[2] for testing
+    await sOHM.transfer(users[2].address, debtLimit);
+    // Transfer 10 sOHM to user[3] for testing
+    await sOHM.transfer(users[3].address, debtLimit);
+    // Transfer 10 sOHM to user[4] for testing
+    await sOHM.transfer(users[4].address, debtLimit);
+    // Transfer 10 sOHM to user[5] for testing
+    await sOHM.transfer(users[5].address, debtLimit);
+  });
+
+  it("should not have debt logged for users[0]", async () => {
+    const { sOHM, users } = testEnv;
+    
+    expect(await sOHM.debtBalances(users[0].address)).to.equal(0);
+  });
+
+  it("should not have users[0] as a debtor", async () => {
+    const { treasury, users } = testEnv;
+    
+    expect(await treasury.permissions(7, users[0].address)).to.equal(false);
+  });
+
+  it("should enable users[0] as a debtor", async () => {
+    const { treasury, users } = testEnv;
+    
+    await treasury.enable(7, users[0].address, users[0].address);
+    await treasury.enable(7, users[1].address, users[1].address);
+    await treasury.enable(7, users[2].address, users[2].address);
+    expect(await treasury.permissions(7, users[0].address)).to.equal(true);
+    expect(await treasury.permissions(7, users[1].address)).to.equal(true);
+    expect(await treasury.permissions(7, users[2].address)).to.equal(true);
+  });
+
+  it("should have debt limit as zero", async () => {
+    const { treasury, users } = testEnv;
+    
+    await treasury.enable(7, users[0].address, users[0].address);
+    expect(await treasury.debtLimit(users[0].address)).to.equal(0);
+  });
+
+  it("should set debt limit", async () => {
+    const { treasury, users } = testEnv;
+    
+    await treasury.enable(7, users[0].address, users[0].address);
+    await treasury.setDebtLimit(users[0].address, debtLimit);
+    expect(await treasury.debtLimit(users[0].address)).to.equal(debtLimit);
+  });
+
+  it("should allow users[0] to borrow", async () => {
+    const { treasury, mockDai, sOHM, users } = testEnv;
+
+    await treasury.enable(7, users[0].address, ZERO_ADDRESS);
+    await treasury.setDebtLimit(users[0].address, debtLimit);
+    // 0x3B9ACA00 = 1000000000
+    // tokenValue = 0x01 = 1
+    await treasury.connect(users[0].signer).incurDebt("0x3B9ACA00", mockDai.address);
+
+    expect(await sOHM.debtBalances(users[0].address)).to.equal(1);
+  });
+
+  it("should allow users[1] to borrow up to her balance in dai", async () => {
+    const { treasury, mockDai, sOHM, users } = testEnv;
+
+    const staked = await sOHM.balanceOf(users[1].address);
+
+    await treasury.enable(7, users[1].address, ZERO_ADDRESS);
+    await treasury.setDebtLimit(users[1].address, debtLimit);
+    await treasury.connect(users[1].signer).incurDebt(staked.mul("0x3B9ACA00"), mockDai.address);
+
+    expect(await sOHM.debtBalances(users[1].address)).to.equal(staked);
+  });
+
+  it("should not allow users[0] to borrow more than her balance in dai", async () => {
+    const { treasury, mockDai, sOHM, users } = testEnv;
+    
+    const staked = await sOHM.balanceOf(users[0].address);
+    await treasury.enable(7, users[0].address, ZERO_ADDRESS);
+    await treasury.setDebtLimit(users[0].address, debtLimit);
+    const amount = staked.mul("0x3B9ACA00").add("0x3B9ACA00");
+
+    await expect(
+        treasury.connect(users[0].signer).incurDebt( amount, mockDai.address)
+    ).to.be.revertedWith("");
+  });
+
+  it("should allow users[2] to borrow up to her balance in ohm", async () => {
+    const { treasury, OHM, sOHM, users } = testEnv;
+
+    const staked = await sOHM.balanceOf(users[2].address);
+    await treasury.enable(10, users[2].address, ZERO_ADDRESS);
+    await treasury.setDebtLimit(users[2].address, debtLimit);
+    await treasury.connect(users[2].signer).incurDebt(staked, OHM.address);
+
+    expect(await sOHM.debtBalances(users[2].address)).to.equal(staked);
+  });
+
+  it("should not allow users[0] to borrow more than her balance in sOhm", async () => {
+    const { treasury, OHM, sOHM, users } = testEnv;
+
+    const staked = await sOHM.balanceOf(users[0].address);
+    await treasury.enable(10, users[0].address, ZERO_ADDRESS);
+    // debtLimit * 2 = "0x4A817C800"
+    await treasury.setDebtLimit(users[0].address, "0x4A817C800");
+    await expect(
+      treasury.connect(users[0].address)
+      .incurDebt(staked.add("0x1"), OHM.address))
+      .to.be.revertedWith("sOHM: insufficient balance");
+  });
+
+  it("should not allow users[3] to borrow more than her debt limit", async () => {
+    const { treasury, OHM, sOHM, users } = testEnv;
+
+    await sOHM.transfer(users[3].address, debtLimit);
+    const staked = await sOHM.balanceOf(users[3].address);
+    await treasury.enable(10, users[3].address, ZERO_ADDRESS);
+    await treasury.setDebtLimit(users[3].address, debtLimit);
+    
+    await expect(treasury.connect(users[3].address)
+      .incurDebt(staked, OHM.address))
+      .to.be.revertedWith("Treasury: exceeds limit");
+  });
+
+  it("should allow users[4] to repay in dai", async () => {
+    const { treasury, OHM, sOHM, mockDai, users } = testEnv;
+
+    const staked = await sOHM.balanceOf(users[4].address);
+    await treasury.enable(7, users[4].address, ZERO_ADDRESS);
+    await treasury.setDebtLimit(users[4].address, debtLimit);
+    const amount = staked.mul("0x3B9ACA00");
+    await treasury.connect(users[4].signer).incurDebt(amount, mockDai.address);
+    // console.log(await sOHM.debtBalances(users[4].address));
+    // console.log(await sOHM.debtBalances(users[4].address));
+    await mockDai.connect(users[4].signer).mint(users[4].address, amount);
+    await mockDai.connect(users[4].signer).approve(treasury.address, LARGE_APPROVAL);
+    await treasury.connect(users[4].signer).repayDebtWithReserve(amount, mockDai.address);
+    // console.log(await sOHM.debtBalances(users[4].address));
+    expect(
+      await sOHM.debtBalances(users[4].address)
+      ).to.equal("0x00");
+  });
+
+  it("should allow users[5] to repay her debt in ohm", async () => {
+    const { treasury, OHM, sOHM, users } = testEnv;
+
+    let staked = await sOHM.balanceOf(users[5].address);
+    await treasury.enable(10, users[5].address, ZERO_ADDRESS);
+    await treasury.setDebtLimit(users[5].address, debtLimit);
+    await treasury.connect(users[5].signer).incurDebt(staked, OHM.address);
+    await OHM.connect(users[5].signer).approve(treasury.address, staked);
+    // console.log(await sOHM.debtBalances(users[5].address));
+    await treasury.connect(users[5].signer).repayDebtWithOHM(staked);
+    // console.log(await sOHM.debtBalances(users[5].address));
+
+    expect(
+      await sOHM.debtBalances(users[5].address)
+      ).to.equal("0x00");
+  });
+
+});

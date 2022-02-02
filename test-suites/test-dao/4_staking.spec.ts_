@@ -1,0 +1,185 @@
+import { BigNumber } from 'ethers';
+import { TestEnv, makeSuite } from './helpers/make-suite';
+
+const { expect } = require('chai');
+
+makeSuite('Staking', (testEnv: TestEnv) => {
+  
+  // 1000 * 10 ** 18
+  const initialMint = "0x3635C9ADC5DEA00000";
+  const LARGE_APPROVAL = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+  const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+  const EPOCH_LENGTH = "2200";
+  const EPOCH_NUMBER = "767";
+  const FUTURE_END_TIME = "1639430907";
+  
+  it("can be constructed", async () => {
+    const { staking, OHM, sOHM, autority, deployer } = testEnv;
+
+    expect(await staking.OHM()).to.equal(OHM.address);
+    expect(await staking.sOHM()).to.equal(sOHM.address);
+    const epoch = await staking.epoch();
+    expect((epoch as any)._length).to.equal(BigNumber.from(EPOCH_LENGTH));
+    expect(epoch.number).to.equal(BigNumber.from(EPOCH_NUMBER));
+    expect(epoch.end).to.equal(BigNumber.from(FUTURE_END_TIME));
+
+    expect(await autority.governor()).to.equal(deployer.address);
+  });
+  
+  it("setDistributor can only be done by the governor", async () => {
+    const { staking, autority, users } = testEnv;
+
+    await expect(staking.connect(users[0].signer).setDistributor(autority.address))
+      .to.be.reverted;
+  });
+
+  it("sets the number of epochs of warmup are required", async () => {
+    const { staking, deployer } = testEnv;
+
+    expect(await staking.warmupPeriod()).to.equal(0);
+    await staking.connect(deployer.signer).setWarmupLength(2);
+    expect(await staking.warmupPeriod()).to.equal(2);
+  });
+
+  it("emits a WarmupSet event", async () => {
+    const { staking, deployer } = testEnv;
+
+    await expect(staking.connect(deployer.signer).setWarmupLength(2))
+      .to.emit(staking, "WarmupSet")
+      .withArgs(2);
+  });
+
+  it("can only be set by the governor", async () => {
+    const { staking, users } = testEnv;
+    
+    await expect(staking.connect(users[0].signer).setWarmupLength(2)).to.be.reverted;
+  });
+  
+  it("adds amount to the warmup when claim is false, regardless of rebasing", async () => {
+    const { staking, OHM, users, treasury, deployer, mockDai } = testEnv;
+    // when _claim is false, the _rebasing flag is taken into account on the claim method
+    const amount = 1000;
+    const gons = 10;
+    const rebasing = true;
+    const claim = false;
+
+    await mockDai.mint(users[0].address, initialMint);
+    await mockDai.connect(users[0].signer).approve(treasury.address, LARGE_APPROVAL);
+
+    await OHM.connect(users[0].signer).approve(staking.address, LARGE_APPROVAL);
+
+    // toggle deployer reserve depositor
+    await treasury.connect(deployer.signer).enable(0, users[0].address, ZERO_ADDRESS)
+    // toggle liquidity depositor
+    await treasury.connect(deployer.signer).enable(4, users[0].address, ZERO_ADDRESS);
+    // deposit to treasury
+    await treasury.connect(users[0].signer).deposit("0x3635C9ADC5DEA00000", mockDai.address, "0xD18C2E2800");
+
+    // const sohmAmount = "0x174876E800";
+    await staking.connect(users[0].signer).stake(users[0].address, amount, rebasing, claim);
+    // console.log(await staking.supplyInWarmup());
+    // console.log(await staking.warmupPeriod());
+    // console.log(await staking.warmupInfo(users[0].address));
+    // console.log(await staking.epoch());
+    
+    expect(await staking.supplyInWarmup()).to.equal("0x05f5e4e8");
+    expect(await staking.warmupPeriod()).to.equal(2);
+    const warmupInfo = await staking.warmupInfo(users[0].address);
+    const epochInfo = await staking.epoch();
+    expect(warmupInfo.deposit).to.equal("0x05f5e4e8");
+    expect(warmupInfo.gons).to.equal(gons);
+    expect(warmupInfo.expiry).to.equal(epochInfo.number);
+    expect(warmupInfo.lock).to.equal(false);
+  });
+
+  it("exchanges OHM for sOHM when claim is true and rebasing is true", async () => {
+    const { staking, users } = testEnv;
+
+    const amount = 1000;
+    const rebasing = true;
+    const claim = true;
+    
+    await staking.connect(users[0].signer).stake(users[0].address, amount, rebasing, claim);
+
+    // nothing is in warmup
+    expect(await staking.supplyInWarmup()).to.equal(0);
+  });
+
+  it("exchanges OHM for newly minted gOHM when claim is true and rebasing is true", async () => {
+    const { staking, gOHM, users } = testEnv;
+
+    const amount = 1000;
+    const indexedAmount = 10000;
+    const rebasing = false;
+    const claim = true;
+
+    await staking.connect(users[0].signer).stake(users[0].address, amount, rebasing, claim);
+
+    await expect(gOHM.mint).to.be.calledWith(users[0].address, indexedAmount);
+  });
+
+  it("adds amount to warmup when claim is true and warmup period > 0, regardless of rebasing", async () => {
+    const { staking, OHM, sOHM, deployer, users } = testEnv;
+    // the rebasing flag is taken into account in the claim method
+    const amount = 1000;
+    const gons = 10;
+    const rebasing = true;
+    const claim = true;
+
+    expect(OHM.transferFrom).whenCalledWith(users[0].address, staking.address, amount).returns(true);
+    expect(sOHM.gonsForBalance).whenCalledWith(amount).returns(gons);
+    expect(sOHM.balanceForGons).whenCalledWith(gons).returns(amount);
+
+    await staking.connect(deployer.signer).setWarmupLength(1);
+    await staking.connect(users[0].signer).stake(users[0].address, amount, true, true);
+
+    expect(await staking.supplyInWarmup()).to.equal(amount);
+    const warmupInfo = await staking.warmupInfo(users[0].address);
+    const epochInfo = await staking.epoch();
+    expect(warmupInfo.deposit).to.equal(amount);
+    expect(warmupInfo.gons).to.equal(gons);
+    expect(warmupInfo.expiry).to.equal(Number(epochInfo.number) + 1);
+    expect(warmupInfo.lock).to.equal(false);
+  });
+
+  it("disables external deposits when locked", async () => {
+    const { staking, OHM, sOHM, deployer, users } = testEnv;
+    
+    const amount = 1000;
+    const gons = 10;
+    const rebasing = false;
+    const claim = false;
+
+    expect(OHM.transferFrom)
+        .whenCalledWith(users[0].address, staking.address, amount)
+        .returns(true);
+    expect(sOHM.gonsForBalance).whenCalledWith(amount).returns(gons);
+
+    await staking.connect(users[0].signer).toggleLock();
+
+    await expect(
+        staking.connect(users[0].signer).stake(users[1].address, amount, rebasing, claim)
+    ).to.be.revertedWith("External deposits for account are locked");
+  });
+
+  it("allows self deposits when locked", async () => {
+    const { staking, OHM, sOHM, deployer, users } = testEnv;
+
+    const amount = 1000;
+    const gons = 10;
+    const rebasing = false;
+    const claim = false;
+
+    expect(OHM.transferFrom)
+        .whenCalledWith(users[0].address, staking.address, amount)
+        .returns(true);
+    expect(sOHM.gonsForBalance).whenCalledWith(amount).returns(gons);
+    expect(sOHM.balanceForGons).whenCalledWith(gons).returns(amount);
+
+    await staking.connect(users[0].signer).toggleLock();
+
+    await staking.connect(users[0].signer).stake(users[0].address, amount, rebasing, claim);
+
+    expect(await staking.supplyInWarmup()).to.equal(amount);
+  });
+});

@@ -1,0 +1,101 @@
+import { BigNumber } from 'ethers';
+import { network} from 'hardhat'
+import { TestEnv, makeSuite } from './helpers/make-suite';
+
+const { expect } = require('chai');
+
+makeSuite('OHM', (testEnv: TestEnv) => {
+  const LARGE_APPROVAL = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+  const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+  // 1000 * 10 ** 18
+  const initialMint = "0x3635C9ADC5DEA00000";
+  // Reward rate of .1%
+  const initialRewardRate = "1000";
+  // Debt limit of 10 | 10 * 10 ** 9
+  const debtLimit = "0x2540BE400";
+  // 1e9
+  const INITIAL_AMOUNT = "0x174876E800";
+  
+  const TOTAL_GONS = "0x11C37937E08000";
+
+  const mineBlock = async () => {
+    await network.provider.request({
+        method: "evm_mine",
+        params: [],
+    });
+  };
+
+  // Calculate index after some number of epochs. Takes principal and rebase rate.
+  // TODO verify this works
+  const calcIndex = (principal, rate, epochs) => principal * (1 + rate) ** epochs;
+
+  // TODO needs cleanup. use Bignumber.
+  // Mine block and rebase. Returns the new index.
+  /*
+  const triggerRebase = async () => {
+      mineBlock();
+      await staking.rebase();
+
+      return await sOhm.index();
+  };
+  */
+  it("correctly constructs an ERC20", async () => {
+    const { OHM } = testEnv;
+
+    expect(await OHM.name()).to.equal("Olympus");
+    expect(await OHM.symbol()).to.equal("OHM");
+    expect(await OHM.decimals()).to.equal(9);
+  });
+
+  it("must be done by vault", async () => {
+    const { OHM, deployer, users } = testEnv;
+
+    await expect(OHM.connect(deployer.signer).mint(users[0].address, 100))
+    .to.be.revertedWith("UNAUTHORIZED");
+  });
+
+  it("increases total supply", async () => {
+    const { OHM, deployer, users, autority } = testEnv;
+    // set deployer as vault
+    await autority.pushVault(deployer.address, true);
+
+    let supplyBefore = await OHM.totalSupply();
+    await OHM.connect(deployer.signer).mint(users[0].address, 100);
+
+    expect(supplyBefore.add(100)).to.equal(await OHM.totalSupply());
+    
+    // set deployer as vault
+    await autority.pushVault(deployer.address, true);
+  });
+
+  it("reduces the total supply", async () => {
+    const { OHM, deployer, users } = testEnv;
+    
+    await OHM.connect(deployer.signer).mint(users[0].address, 100);
+    let supplyBefore = await OHM.totalSupply();
+    await OHM.connect(users[0].signer).burn(10);
+
+    expect(supplyBefore.sub(10)).to.equal(await OHM.totalSupply());
+  });
+
+  it("cannot exceed total supply", async () => {
+    const { OHM, users } = testEnv;
+
+    let supply = await OHM.totalSupply();
+    await expect(OHM.connect(users[0].signer).burn(supply.add(1)))
+      .to.be.revertedWith("ERC20: burn amount exceeds balance");
+  });
+
+  it("cannot exceed users[0] balance", async () => {
+    const { OHM, deployer, users, autority, treasury } = testEnv;
+
+    await OHM.connect(deployer.signer).mint(users[1].address, 15);
+    
+    await expect(OHM.connect(users[1].address).burn(16))
+      .to.be.revertedWith("ERC20: burn amount exceeds balance");
+    
+      // set deployer as vault
+      // await autority.pushVault(treasury.address, true);
+  });
+
+});

@@ -1,0 +1,248 @@
+import { BigNumber } from 'ethers';
+import { network} from 'hardhat'
+import { TestEnv, makeSuite } from './helpers/make-suite';
+
+const { expect } = require('chai');
+
+makeSuite('sOHM', (testEnv: TestEnv) => {
+  const LARGE_APPROVAL = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+  const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+  // 1000 * 10 ** 18
+  const initialMint = "0x3635C9ADC5DEA00000";
+  // Reward rate of .1%
+  const initialRewardRate = "1000";
+  // Debt limit of 10 | 10 * 10 ** 9
+  const debtLimit = "0x2540BE400";
+  // 1e9
+  const INITIAL_AMOUNT = "0x174876E800";
+  
+  const TOTAL_GONS = "0x11C37937E08000";
+
+  const mineBlock = async () => {
+    await network.provider.request({
+        method: "evm_mine",
+        params: [],
+    });
+  };
+
+  // Calculate index after some number of epochs. Takes principal and rebase rate.
+  // TODO verify this works
+  const calcIndex = (principal, rate, epochs) => principal * (1 + rate) ** epochs;
+
+  // TODO needs cleanup. use Bignumber.
+  // Mine block and rebase. Returns the new index.
+  /*
+  const triggerRebase = async () => {
+      mineBlock();
+      await staking.rebase();
+
+      return await sOhm.index();
+  };
+  */
+  it("is constructed correctly", async () => {
+    const { sOHM } = testEnv;
+    expect(await sOHM.name()).to.equal("Staked OHM");
+    expect(await sOHM.symbol()).to.equal("sOHM");
+    expect(await sOHM.decimals()).to.equal(9);
+  });
+
+  it("must be done by the initializer", async () => {
+    const { sOHM, users } = testEnv;
+    await expect(sOHM.connect(users[0].signer).setIndex(3)).to.be.reverted;
+  });
+
+  it("cannot update the index if already set", async () => {
+    const { sOHM, deployer } = testEnv;
+    // index seted in _setup.spec.ts
+    await expect(sOHM.connect(deployer.signer).setIndex(3)).to.be.reverted;
+  });
+
+  it("won't set gOhmFake to 0 address", async () => {
+    const { sOHM, deployer } = testEnv;
+    await expect(sOHM.connect(deployer.signer).setgOHM(ZERO_ADDRESS)).to.be.reverted;
+  });
+
+  it("assigns TOTAL_GONS to the stakingFake contract's balance", async () => {
+    const { sOHM, deployer, staking, treasury } = testEnv;
+    // initialized in _setup.spec.ts
+    // await sOHM.connect(deployer.signer).initialize(staking.address, treasury.address);
+    expect(await sOHM.balanceOf(staking.address)).to.equal(TOTAL_GONS);
+  });
+  /*
+  it("emits Transfer event", async () => {
+    const { sOHM, deployer, staking, treasury } = testEnv;
+
+    await expect(
+      sOHM.connect(deployer.signer).initialize(staking.address, treasury.address))
+        .to.emit(sOHM, "Transfer")
+        .withArgs(ZERO_ADDRESS, staking.address, TOTAL_GONS);
+  });
+  
+  it("emits LogStakingContractUpdated event", async () => {
+    const { sOHM, deployer, staking, treasury } = testEnv;
+    await expect(
+      sOHM.initialize(staking.address, treasury.address))
+        .to.emit(sOHM, "LogStakingContractUpdated")
+        .withArgs(staking.address);
+  });
+  */
+  it("unsets the deployer.signer, so it cannot be called again", async () => {
+    const { sOHM, deployer, staking, treasury } = testEnv;
+    
+    await expect(
+        sOHM.connect(deployer.signer).initialize(staking.address, treasury.address)
+    ).to.be.reverted;
+  });
+
+  it("sets the allowed value between sender and spender", async () => {
+    const { sOHM, deployer, users } = testEnv;
+
+    await sOHM.connect(deployer.signer).approve(users[0].address, 10);
+    expect(await sOHM.allowance(deployer.address, users[0].address)).to.equal(10);
+  });
+
+  it("emits an Approval event", async () => {
+    const { sOHM, deployer, users } = testEnv;
+
+    await expect(await sOHM.connect(deployer.signer).approve(users[0].address, 10))
+      .to.emit(sOHM, "Approval")
+      .withArgs(deployer.address, users[0].address, 10);
+  });
+
+  it("increases the allowance between sender and spender", async () => {
+    const { sOHM, deployer, users } = testEnv;
+
+    await sOHM.connect(deployer.signer).approve(users[0].address, 10);
+    await sOHM.connect(deployer.signer).increaseAllowance(users[0].address, 4);
+
+    expect(await sOHM.allowance(deployer.address, users[0].address)).to.equal(14);
+  });
+
+  it("emits an Approval event", async () => {
+    const { sOHM, deployer, staking, users } = testEnv;
+
+    await sOHM.connect(deployer.signer).approve(users[0].address, 10);
+    await expect(await sOHM.connect(deployer.signer).increaseAllowance(users[0].address, 4))
+        .to.emit(sOHM, "Approval")
+        .withArgs(deployer.address, users[0].address, 14);
+  });
+
+  it("decreases the allowance between sender and spender", async () => {
+    const { sOHM, deployer, staking, users } = testEnv;
+
+    await sOHM.connect(deployer.signer).approve(users[0].address, 10);
+    await sOHM.connect(deployer.signer).decreaseAllowance(users[0].address, 4);
+
+    expect(await sOHM.allowance(deployer.address, users[0].address)).to.equal(6);
+  });
+
+  it("will not make the value negative", async () => {
+    const { sOHM, deployer, staking, users } = testEnv;
+
+    await sOHM.connect(deployer.signer).approve(users[0].address, 10);
+    await sOHM.connect(deployer.signer).decreaseAllowance(users[0].address, 11);
+
+    expect(await sOHM.allowance(deployer.address, users[0].address)).to.equal(0);
+  });
+
+  it("emits an Approval event", async () => {
+    const { sOHM, deployer, staking, users } = testEnv;
+
+    await sOHM.connect(deployer.signer).approve(users[0].address, 10);
+    await expect(await sOHM.connect(deployer.signer).decreaseAllowance(users[0].address, 4))
+        .to.emit(sOHM, "Approval")
+        .withArgs(deployer.address, users[0].address, 6);
+  });
+
+  it('setup treasury', async () => {
+    const { mockDai, OHM, sOHM, staking, stakingDistributor, treasury, deployer, users } = testEnv;
+
+    // Needed for treasury deposit
+    //await gOhm.migrate(staking.address, sOhm.address);
+    await mockDai.mint(deployer.address, initialMint);
+    await mockDai.approve(treasury.address, LARGE_APPROVAL);
+
+    await mockDai.mint(users[6].address, initialMint);
+    await mockDai.connect(users[6].signer).approve(treasury.address, LARGE_APPROVAL);
+
+    // Needed to spend deployer's OHM
+    await OHM.approve(staking.address, LARGE_APPROVAL);
+
+    // Don't need to disable timelock because disabled by default.
+
+    // toggle reward manager
+    await treasury.enable("8", stakingDistributor.address, ZERO_ADDRESS);
+    // toggle deployer reserve depositor
+    await treasury.enable("0", deployer.address, ZERO_ADDRESS);
+    // toggle liquidity depositor
+    await treasury.enable("4", deployer.address, ZERO_ADDRESS);
+    // toggle DAI as reserve token
+    await treasury.enable("2", mockDai.address, ZERO_ADDRESS);
+    // set sOHM
+    await treasury.enable("9", sOHM.address, ZERO_ADDRESS);
+
+    // Add staking as recipient of distributor with a test reward rate
+    await stakingDistributor.addRecipient(staking.address, initialRewardRate);
+
+  });
+
+  it('deposit to treasury', async () => {
+    const { mockDai, staking, OHM, sOHM, treasury, deployer, users } = testEnv;
+    // toggle deployer reserve depositor
+    await treasury.connect(deployer.signer).enable(0, users[6].address, ZERO_ADDRESS)
+    // toggle liquidity depositor
+    await treasury.connect(deployer.signer).enable(4, users[6].address, ZERO_ADDRESS);
+    // deposit to treasury
+    await treasury.connect(users[6].signer).deposit("0x3635C9ADC5DEA00000", mockDai.address, "0xD18C2E2800");
+
+    // Get sOHM in deployer wallet
+    // 100 OHM
+    const sohmAmount = "0x174876E800";
+    await OHM.connect(users[6].signer).approve(staking.address, LARGE_APPROVAL);
+
+    await staking.connect(users[6].signer).stake(users[6].address, sohmAmount, true, true);
+    // console.log(await sOHM.balanceOf(users[6].address));
+    /*
+    // Transfer 10 sOHM to user[0] for testing
+    await sOHM.transfer(users[0].address, debtLimit);
+    // Transfer 10 sOHM to user[1] for testing
+    await sOHM.transfer(users[1].address, debtLimit);
+    // Transfer 10 sOHM to user[2] for testing
+    await sOHM.transfer(users[2].address, debtLimit);
+    // Transfer 10 sOHM to user[3] for testing
+    await sOHM.transfer(users[3].address, debtLimit);
+    // Transfer 10 sOHM to user[4] for testing
+    await sOHM.transfer(users[4].address, debtLimit);
+    // Transfer 10 sOHM to user[5] for testing
+    await sOHM.transfer(users[5].address, debtLimit);
+    */
+  });
+
+  it("should rebase properly", async () => {
+    const { sOHM, deployer, users } = testEnv;
+    // console.log(await sOHM.balanceOf(users[6].address));
+    // console.log(await sOHM.index());
+    expect(await sOHM.balanceOf(users[6].address)).to.equal('0x174e6cc900');
+    expect(await sOHM.index()).to.equal("0x3B9ACA00");
+
+    // await sOHM.rebase();
+    // console.log(await sOHM._agnosticBalance(users[6].address));
+    // console.log(await sOHM.balanceOf(users[6].address));
+    // console.log(await sOHM.index());
+    // expect(await sOHM._agnosticBalance(users[6].address)).to.equal("0x174876E800");
+    // expect(await sOHM.balanceOf(users[6].address)).to.equal("101000000000");
+    // expect(await sOHM.index()).to.equal("1010000000");
+  });
+
+  it("should transfer properly", async () => {
+    const { sOHM, users, deployer } = testEnv;    
+
+    //await sOHM.approve(users[0].address, INITIAL_AMOUNT);
+    const amount = await sOHM.balanceOf(users[6].address);
+    await sOHM.connect(users[6].signer).transfer(users[0].address, debtLimit);
+
+    expect(await sOHM.balanceOf(users[6].address)).to.equal(amount.sub(debtLimit));
+    expect(await sOHM.balanceOf(users[0].address)).to.equal(debtLimit);
+  });
+
+});
