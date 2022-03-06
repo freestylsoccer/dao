@@ -133,27 +133,7 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
   await waitForTx(
     await olympusTreasury.enable(4, master, ZERO_ADDRESS)
   );
-  
-  /*
-  await waitForTx(
-    await olympusTreasury.execute("0")
-  );
-  await waitForTx(
-    await olympusTreasury.execute("1")
-  );
-  await waitForTx(
-    await olympusTreasury.execute("2")
-  );
-  await waitForTx(
-    await olympusTreasury.execute("3")
-  );
-  await waitForTx(
-    await olympusTreasury.execute("4")
-  );
-  */
-  // await waitForTx(
-  //   await olympusTreasury.enable(1, boundDepository.address, ZERO_ADDRESS)
-  // );
+
   console.log("Setup -- treasury.enable(8):  distributor enabled to mint ohm on treasury");
 
   // Step 3: Set distributor on staking

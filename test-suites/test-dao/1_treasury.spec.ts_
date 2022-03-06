@@ -70,19 +70,19 @@ makeSuite('Treasuty', (testEnv: TestEnv) => {
 
   it('deposit to treasury', async () => {
     const { mockDai, staking, OHM, sOHM, treasury, deployer, users } = testEnv;
-    console.log("pre deposit");
-    console.log(await treasury.tokenValue(mockDai.address, profit));
-    console.log(await treasury.baseSupply());
-    console.log(await treasury.excessReserves());
-    console.log(await treasury.indexInRegistry(deployer.address, 1));
+    // console.log("pre deposit");
+    // console.log(await treasury.tokenValue(mockDai.address, profit));
+    // console.log(await treasury.baseSupply());
+    // console.log(await treasury.excessReserves());
+    // console.log(await treasury.indexInRegistry(deployer.address, 1));
 
     // deposit to treasury
     await treasury.connect(deployer.signer).deposit(initialMint, mockDai.address, profit);
-    console.log("post deposit");
-    console.log(await treasury.tokenValue(mockDai.address, profit));
-    console.log(await treasury.baseSupply());
-    console.log(await treasury.excessReserves());
-    console.log(await treasury.indexInRegistry(deployer.address, 1));
+    // console.log("post deposit");
+    // console.log(await treasury.tokenValue(mockDai.address, profit));
+    // console.log(await treasury.baseSupply());
+    // console.log(await treasury.excessReserves());
+    // console.log(await treasury.indexInRegistry(deployer.address, 1));
 
     // Get sOHM in deployer wallet
     // 100 OHM
@@ -92,19 +92,19 @@ makeSuite('Treasuty', (testEnv: TestEnv) => {
     await staking.stake(deployer.address, sohmAmount, true, true);
 
     // Transfer 10 sOHM to user[0] for testing
-    await sOHM.transfer(users[0].address, debtLimit);
+    // await sOHM.transfer(users[0].address, debtLimit);
     // Transfer 10 sOHM to user[1] for testing
-    await sOHM.transfer(users[1].address, debtLimit);
+    // await sOHM.transfer(users[1].address, debtLimit);
     // Transfer 10 sOHM to user[2] for testing
-    await sOHM.transfer(users[2].address, debtLimit);
+    // await sOHM.transfer(users[2].address, debtLimit);
     // Transfer 10 sOHM to user[3] for testing
-    await sOHM.transfer(users[3].address, debtLimit);
+    // await sOHM.transfer(users[3].address, debtLimit);
     // Transfer 10 sOHM to user[4] for testing
-    await sOHM.transfer(users[4].address, debtLimit);
+    // await sOHM.transfer(users[4].address, debtLimit);
     // Transfer 10 sOHM to user[5] for testing
-    await sOHM.transfer(users[5].address, debtLimit);
+    // await sOHM.transfer(users[5].address, debtLimit);
   });
-
+/*
   it("should not have debt logged for users[0]", async () => {
     const { sOHM, users } = testEnv;
     
@@ -252,5 +252,5 @@ makeSuite('Treasuty', (testEnv: TestEnv) => {
       await sOHM.debtBalances(users[5].address)
       ).to.equal("0x00");
   });
-
+*/
 });

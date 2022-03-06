@@ -36,7 +36,7 @@ makeSuite('Bonds', (testEnv: TestEnv) => {
     // console.log(await treasury.tokenValue(mockDai.address, "0x3635C9ADC5DEA00000"));
 
     await mockDai.mint(users[0].address, "0x3635C9ADC5DEA00000");
-    await mockDai.connect(users[0].signer).approve(treasury.address, "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+    // await mockDai.connect(users[0].signer).approve(treasury.address, "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
     // await gOHM.connect(users[0].signer).approve(treasury.address, "1000000000000000000000000000000000000000000000000000000000000000");
     // console.log(await treasury.permissions());
     // await OHM.connect(treasury.signer).approve(treasury.address, "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
@@ -58,13 +58,22 @@ makeSuite('Bonds', (testEnv: TestEnv) => {
       quoteToken,
       [capacity, initialPrice, debtBuffer],
       [false, true],
-      [100, 1643577661000],
+      [100, 1649070672],
+      [14400, 86400]
+      );
+    
+    // Create market
+    await boundDepository.create(
+      quoteToken,
+      [capacity, initialPrice, debtBuffer],
+      [false, true],
+      [100, 1659070672],
       [14400, 86400]
       );
   });
 
   it('Bond Depository Deposit', async () => {
-    const { boundDepository, users, treasury } = testEnv;
+    const { boundDepository, users, mockDai, treasury } = testEnv;
 
     // console.log(await boundDepository.currentDebt(0));
     // console.log("base supply: ");
@@ -83,8 +92,8 @@ makeSuite('Bonds', (testEnv: TestEnv) => {
     // console.log(await boundDepository.marketPrice(0));
     // console.log("excess Reserves: ");
     // console.log(await treasury.excessReserves());
-
-    await boundDepository.connect(users[0].signer).deposit(0, "0x0", "0xCCE416600", users[0].address, users[2].address);
+    await mockDai.connect(users[0].signer).approve(boundDepository.address, "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+    await boundDepository.connect(users[0].signer).deposit(0, "0xDE0B6B3A7640000", "0xCCE416600", users[0].address, treasury.address);
     // console.log("base supply after deposit: ");
     // console.log(await treasury.baseSupply());
     // console.log("market price: ");
@@ -99,4 +108,5 @@ makeSuite('Bonds', (testEnv: TestEnv) => {
       / treasury.baseSupply(); // total treasury basesupply = 0 :then div/0
     */
   });
+
 });
