@@ -45,9 +45,9 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
   const boundingCalculator = await deployBoundingCalculator([OHM.address], false);
 
   // deploy olympus staking
-  const EPOCH_LENGTH_IN_BLOCKS = "100000";
-  const FIRST_EPOCH_NUMBER = "767";
-  const FIRST_EPOCH_TIME = "1639430907";
+  const EPOCH_LENGTH_IN_BLOCKS = "43200";
+  const FIRST_EPOCH_NUMBER = "1";
+  const FIRST_EPOCH_TIME = "1648404595";
   const olympusStaking = await deployStaking(
     [
       OHM.address,
@@ -83,88 +83,56 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
   const mockDai = await deployMockDai(["0"], false)
   // initial configuration
   const INITIAL_INDEX = "1000000000";
-  const INITIAL_REWARD_RATE = "4000";
+  const INITIAL_REWARD_RATE = "150";
   const BOUNTY_AMOUNT = "100000000";
 
-
   // Step 0: Set mint rights from migrator to staking
-  await waitForTx(
-    await gOhm.migrate(olympusStaking.address, sOhm.address)
-  );
+  await waitForTx(await gOhm.migrate(olympusStaking.address, sOhm.address));
+
   console.log("Setup -- gOhm.migrate: set mint rights to staking");
 
   // Step 1: Set treasury as vault on authority
-  await waitForTx(
-    await olympusAuthority.pushVault(olympusTreasury.address, true)
-  );
+  await waitForTx(await olympusAuthority.pushVault(olympusTreasury.address, true));
+
   console.log("Setup -- authorityContract.pushVault: set vault on authority");
 
   // Step 2: Set distributor as minter on treasury
-  // Allows distributor to mint ohm.
-  // await waitForTx(
-  //   await olympusTreasury.queueTimelock(2, mockDai.address, mockDai.address)
-  // );
-  
-  // toggle reward manager
-  await waitForTx(
-    await olympusTreasury.enable(8, olympusStakingDistributor.address, ZERO_ADDRESS)
-  );
-
-  await waitForTx(
-    await olympusTreasury.enable(8, boundDepository.address, ZERO_ADDRESS)
-  );
-  
-  // toggle DAI as reserve token
-  await waitForTx(
-    await olympusTreasury.enable(2, mockDai.address, ZERO_ADDRESS)
-  );
-  
-  // toggle deployer reserve depositor
-  await waitForTx(
-    await olympusTreasury.enable(0, master, ZERO_ADDRESS)
-  );
-  
-  // set sOHM
-  await waitForTx(
-    await olympusTreasury.enable(9, sOhm.address, ZERO_ADDRESS)
-  );
-  
-  // toggle liquidity depositor
-  await waitForTx(
-    await olympusTreasury.enable(4, master, ZERO_ADDRESS)
-  );
+  await waitForTx(await olympusTreasury.enable(8, olympusStakingDistributor.address, ZERO_ADDRESS));
 
   console.log("Setup -- treasury.enable(8):  distributor enabled to mint ohm on treasury");
 
   // Step 3: Set distributor on staking
-  await waitForTx(
-    await olympusStaking.setDistributor(olympusStakingDistributor.address)
-  );
+  await waitForTx(await olympusStaking.setDistributor(olympusStakingDistributor.address));
+
   console.log("Setup -- staking.setDistributor:  distributor set on staking");
 
   // Step 4: Initialize sOHM and set the index
   if ((await sOhm.gOHM()) == ZERO_ADDRESS) {
     // Set index to 1
-    await waitForTx(
-      await sOhm.setIndex(INITIAL_INDEX)
-    );
-    await waitForTx(
-      await sOhm.setgOHM(gOhm.address)
-    );
-    await waitForTx(
-      await sOhm.initialize(olympusStaking.address, olympusTreasury.address)
-    );
+    await waitForTx(await sOhm.setIndex(INITIAL_INDEX));
+    await waitForTx(await sOhm.setgOHM(gOhm.address));
+    await waitForTx(await sOhm.initialize(olympusStaking.address, olympusTreasury.address));
   }
   console.log("Setup -- sohm initialized (index, gohm)");
 
   // Step 5: Set up distributor with bounty and recipient
-  await waitForTx(
-    await olympusStakingDistributor.setBounty(BOUNTY_AMOUNT)
-  );
-  await waitForTx(
-    await olympusStakingDistributor.addRecipient(olympusStaking.address, INITIAL_REWARD_RATE)
-  );
+  await waitForTx(await olympusStakingDistributor.setBounty(BOUNTY_AMOUNT));
+  await waitForTx(await olympusStakingDistributor.addRecipient(olympusStaking.address, INITIAL_REWARD_RATE));
+
   console.log("Setup -- distributor.setBounty && distributor.addRecipient");
+
+  await waitForTx(await olympusTreasury.enable(8, boundDepository.address, ZERO_ADDRESS));
+  await waitForTx(await olympusTreasury.enable(8, master, ZERO_ADDRESS));
+  // toggle DAI as reserve token
+  await waitForTx(await olympusTreasury.enable(2, mockDai.address, ZERO_ADDRESS));
+  // toggle deployer reserve depositor
+  await waitForTx(await olympusTreasury.enable(0, master, ZERO_ADDRESS));
+  // set sOHM
+  await waitForTx(await olympusTreasury.enable(9, sOhm.address, ZERO_ADDRESS));
+  // toggle liquidity depositor
+  await waitForTx(await olympusTreasury.enable(4, master, ZERO_ADDRESS));
+
+  console.log("Setup -- treasury.enable(8):  distributor enabled to mint ohm on treasury");
   console.timeEnd('setup');
 };
 

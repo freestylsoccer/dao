@@ -62,7 +62,8 @@ const getCommonNetworkConfig = (networkName: eNetwork, networkId: number) => ({
   gasMultiplier: DEFAULT_GAS_MUL,
   gasPrice: NETWORKS_DEFAULT_GAS[networkName],
   chainId: networkId,
-  accounts: ['9f1938b2ec4ebcba7f6f6197c09eb68aa870f9b92417227c5903d7abd560c5f6'],
+  // accounts: ['9f1938b2ec4ebcba7f6f6197c09eb68aa870f9b92417227c5903d7abd560c5f6'],
+  accounts: ['1559dbef8050bd12f7f98f8837b92525e8cf8410b85db7facd78279d16e73149'],
   /*
   accounts: {
     mnemonic: MNEMONIC,

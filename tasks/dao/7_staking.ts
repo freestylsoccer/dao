@@ -18,9 +18,9 @@ task('dao:staking', 'Deploy Olympus Staking for dev enviroment')
     const gOhm = await getGohm();
     const olympusAuthority = await getOlympusAuthority();
 
-    const EPOCH_LENGTH_IN_BLOCKS = "1000";
-    const FIRST_EPOCH_NUMBER = "767";
-    const FIRST_EPOCH_TIME = "1639430907";
+    const EPOCH_LENGTH_IN_BLOCKS = "43200";
+    const FIRST_EPOCH_NUMBER = "1";
+    const FIRST_EPOCH_TIME = "1649785207";
 
     await deployStaking(
       [

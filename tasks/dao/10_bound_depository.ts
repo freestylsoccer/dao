@@ -25,7 +25,7 @@ task('dao:bounddepository', 'Deploy Bound Depository for dev enviroment')
     const olympusAuthority = await getOlympusAuthority();
 
 
-    const boundDepositoryV2 = await deployBoundDepositoryV2(
+    await deployBoundDepositoryV2(
       [
         olympusAuthority.address,
         ohm.address,
